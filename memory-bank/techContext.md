@@ -4,10 +4,10 @@
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Framework | Next.js (App Router) | 14+ |
+| Framework | Next.js (App Router) | 16.2.1 |
 | Language | TypeScript | 5+ (strict mode) |
-| UI Components | shadcn/ui (Radix primitives) | latest |
-| Styling | Tailwind CSS | 3+ |
+| UI Components | shadcn/ui (@base-ui/react — NOT Radix) | base-nova style |
+| Styling | Tailwind CSS | v4 |
 | Drag-and-Drop | @dnd-kit/core + @dnd-kit/sortable | latest |
 | Canvas | react-konva (Konva.js) | latest |
 | Client State | Zustand | latest (canvas only) |
@@ -22,6 +22,12 @@
 - Repository: `kingdomTools` (Git)
 - Package manager: npm
 - Node.js 20+ LTS
+- PostgreSQL 16.13 installed via `winget install PostgreSQL.PostgreSQL.16`
+  - Service: `postgresql-x64-16` (Windows service, auto-start)
+  - PG bin: `C:\Program Files\PostgreSQL\16\bin` (add to PATH each session)
+  - Dev DB: `kingdomtools`, user: `kingdomtools`, password: `localdev`
+  - Auth password: `kingmaker` (dev fallback hash hardcoded in `src/lib/auth.ts`; bcrypt `$` conflicts with dotenv-expand)
+- PowerShell needs: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force`
 
 ## VPS (Production)
 - Provider: Hetzner
@@ -48,6 +54,8 @@
 - Prisma runs server-side only — never imported in client components
 - Canvas components use Zustand for local state; everything else uses Server Components + API routes
 - JSONB columns for flexible data (campsite layouts, kingdom logs)
+- **shadcn/ui uses @base-ui/react** (NOT Radix): no `asChild` prop on DialogTrigger (use inline className), `Select.onValueChange` signature is `(value: string | null, eventDetails) => void` (wrap with `val ?? default`)
+- Passing Prisma objects to client components requires `JSON.parse(JSON.stringify(...))` to strip non-serializable fields
 
 ## CI/CD Pipeline (Planned)
 - GitHub Actions: lint → type-check → test → build → push Docker image

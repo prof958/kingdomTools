@@ -1,7 +1,7 @@
 # System Patterns — KingdomTools
 
 ## Architecture
-Single Next.js 14+ monolith with PostgreSQL backend, deployed via Docker Compose.
+Single Next.js 16 monolith with PostgreSQL backend, deployed via Docker Compose.
 
 ```
 [Browser] → [Caddy :443 (TLS)] → [Next.js :3000]
