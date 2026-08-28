@@ -77,7 +77,9 @@
 - [x] Rules engine `src/lib/pf2e/kingdom.ts` + 35 Vitest cases (RAW & VK rulesets).
 - [x] Schema redesign + migration `20260828120000_redesign_kingdom` (skills, feats,
       founding choices, ruin tracks, fame, size; JSONB settlement grid; structure catalog).
-      ⚠ migration written but NOT yet applied — run `npx prisma migrate dev`.
+      Applied in prod via `prisma migrate deploy` — now wired into the Dockerfile CMD
+      (previously nothing ran migrations on deploy; that was the cause of the first
+      P2022 "kingdoms.ruleset does not exist" runtime error on Coolify).
 - [x] `getOrCreateKingdom()` bootstrap + `/api/kingdom`, `/api/kingdom/leadership`,
       `/api/kingdom/skills` (24 API routes total, clean build).
 - [x] Kingdom Dashboard page: Overview (abilities, derived stats, unrest, ruin, resources),
@@ -89,6 +91,11 @@
 - [ ] Seed `kingdom_structures` catalog (RAW + V&K item-bonus additions).
 
 ## Known Issues
+- Deploy (Coolify/Docker) previously ran **no** DB migrations — Dockerfile CMD now does
+  `npx prisma migrate deploy && npm start`. Requires `_prisma_migrations` history to be
+  intact on prod; check with `npx prisma migrate status` if a deploy migration fails.
+- `next start` warns it "does not work with output: standalone" — app still serves; proper
+  fix is `node .next/standalone/server.js` + copying `.next/static` and `public`, deferred.
 - Next.js 16 warns that `middleware` is deprecated in favor of `proxy` — functional, no migration needed yet
 - PowerShell requires `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force` each new terminal session
 - bcrypt hashes contain `$` which conflicts with dotenv-expand — dev fallback hash hardcoded in auth.ts; production uses real env var
