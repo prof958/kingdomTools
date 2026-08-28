@@ -110,7 +110,21 @@
       it in one transaction, recomputing scores and skills server-side so stored state can
       never drift from the choices. The Kingdom tab shows the wizard while `founded` is
       false and the dashboard afterwards.
-- [ ] Hex Map implementation.
+- [x] Hex Map — a Konva canvas over the four printed sheets with a hex overlay that
+      sits exactly on the painted grid. Sheet picker, scroll-zoom, drag-pan, click to
+      select; a hex inspector sets state / terrain / work site / terrain features / roads /
+      fortification / label. Claimed and reconnoitered hexes are tinted, untouched hexes
+      draw nothing so the printed map stays readable. The Claim Hex adjacency rule is
+      surfaced in the inspector. `GET`/`PATCH /api/kingdom/hexes` store hexes lazily and
+      recount the kingdom's Size from claimed hexes on every write.
+- [x] Migration `20260828180000_hex_sheet` — `hexes.sheet` plus a widened uniqueness
+      constraint, since (q, r) only identifies a hex within one sheet. **Not yet applied.**
+- [x] `src/lib/hex.ts` — pointy-top hex maths (centres, corners, hit-testing, neighbours,
+      distance) with 21 tests, including a round-trip over every hex centre on a sheet.
+- [x] Grid origin solved properly: fitting the whole hexagon outline instead of a
+      one-dimensional comb of grid lines. A hex lattice has vertical edges every *half*
+      column pitch, so the comb scored two phases equally and picked between them by noise
+      — it had produced origins disagreeing by 90px between identical sheets.
 - [ ] Settlements & Urban Grid.
 - [ ] Turn Tracker (roll, then confirm).
 - [ ] Seed `kingdom_structures` catalog (RAW + V&K item-bonus additions).

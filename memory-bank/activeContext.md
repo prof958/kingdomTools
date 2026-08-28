@@ -7,8 +7,8 @@
 Phase 5 Kingdom — building toward a **game-feel** Kingdom section (Travian-like), not a
 spreadsheet. Rules engine, schema, bootstrap API and the Dashboard page are in. Art assets
 are extracted from the Player's Guide. The activity catalog, dice module and V&K trained
-skills landed, and the founding wizard is in. Next: hex map → settlements/Urban Grid →
-turn tracker → theme pass.
+skills landed, the founding wizard is in, and the hex map works. Next: settlements/Urban
+Grid → turn tracker → theme pass.
 
 ## Phase 5 Direction (decided with the user)
 - **Game feel over forms** — the Kingdom section should read like a browser kingdom-builder.
@@ -47,8 +47,15 @@ turn tracker → theme pass.
   repeating hex lattice matching itself. Do not re-stitch without outside evidence of the
   intended layout.
 - **Hex geometry is measured** — pointy-top, 175px column pitch, 152px row pitch, ~101px
-  circumradius, per-sheet grid origins in `public/kingdom/map/manifest.json`. The ratio
-  175/152 = 1.151 against the 1.1547 a pointy-top lattice predicts.
+  circumradius. The ratio 175/152 = 1.151 against the 1.1547 a pointy-top lattice predicts.
+  Both pitches are kept rather than derived from one circumradius: a lattice with rowPitch
+  152 wants colPitch 175.5, and deriving one from the other drifts ~4px across a sheet.
+  Grid origins are found by fitting the full hexagon outline — a 1-D comb of grid lines is
+  ambiguous, because a hex lattice has vertical edges every *half* column pitch.
+- **Map assets are behind the password gate.** `/kingdom/map/*` is matched by the proxy
+  like any other route, so the sheets 302 to /login when signed out. That is the right
+  default for art licensed for personal use; it does mean an unauthenticated preview shows
+  an empty canvas.
 - **react-konva** — requires `dynamic(() => import(...), { ssr: false })` for Next.js compatibility
 - **Zustand** — used only for canvas state management (positions, selections, zoom/pan)
 - **JSONB elements** — campsite layout positions stored as JSON in CampsiteLayout.elements column
@@ -109,6 +116,9 @@ turn tracker → theme pass.
 - `src/components/kingdom/founding-wizard.tsx` — the 8-step onboarding flow
 - `src/components/kingdom/founding-parts.tsx` — ability crests, choice cards, step rail
 - `src/app/api/kingdom/found/route.ts` — transactional commit of the founding
+- `src/lib/hex.ts` + `src/lib/map-sheets.ts` (generated) — hex maths and sheet geometry
+- `src/components/kingdom/kingdom-map.tsx` / `hex-map-canvas.tsx` / `hex-inspector.tsx`
+- `src/app/api/kingdom/hexes/route.ts` — hex upsert; recounts kingdom Size
 - `src/lib/kingdom.ts` — `getOrCreateKingdom()` (seeds 16 skills + 8 roles)
 - `src/app/api/kingdom/route.ts` — GET / PATCH scalar fields (whitelisted)
 - `src/app/api/kingdom/leadership/route.ts` — PATCH one role (assign char/NPC, invest)
@@ -117,9 +127,13 @@ turn tracker → theme pass.
 - `src/app/(app)/kingdom/page.tsx` — server component, replaces the placeholder
 
 ## Notes for the next slice
-- **The migration is unapplied.** No local Postgres and no Docker in this environment, so
-  `20260828170000_kingdom_founding` was hand-written in the style of the previous kingdom
-  migration and verified only by typecheck and build. It runs on the next deploy.
+- **Two migrations are unapplied.** No local Postgres and no Docker in this environment, so
+  `20260828170000_kingdom_founding` and `20260828180000_hex_sheet` were hand-written in the
+  style of the previous kingdom migration and verified only by typecheck and build. They
+  run on the next deploy.
+- **Kingdom Size is derived from the map now.** `PATCH /api/kingdom/hexes` recounts claimed
+  hexes and writes Size, so the Overview's Size field should become read-only rather than
+  letting the two disagree.
 - The wizard lets one character hold several leadership roles. The Player's Guide expects
   one role per PC, but this is a player helper rather than a rules enforcer — tighten it
   only if the table wants that.
