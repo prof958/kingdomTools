@@ -4,10 +4,24 @@
 **Phase 5 — Kingdom** 🚧 IN PROGRESS
 
 ## Current Focus
-Phase 5 Kingdom — **foundation slice landed**: rules engine, schema redesign + migration,
-kingdom bootstrap + API, and the Kingdom Dashboard page (Overview / Skills / Leadership /
-Founding tabs). Next: apply the migration on a live DB, then hex map → settlements/Urban
-Grid → turn-tracker wizard.
+Phase 5 Kingdom — building toward a **game-feel** Kingdom section (Travian-like), not a
+spreadsheet. Rules engine, schema, bootstrap API and the Dashboard page are in. Art assets
+are extracted from the Player's Guide. The activity catalog, dice module and V&K trained
+skills just landed. Next: schema migration for the trained-skill fields, then the founding
+wizard → hex map → settlements/Urban Grid → turn tracker → theme pass.
+
+## Phase 5 Direction (decided with the user)
+- **Game feel over forms** — the Kingdom section should read like a browser kingdom-builder.
+- **Milestone levelling, no XP** — the GM sets the kingdom level. All XP machinery removed
+  from the engine, the schema field is still there but unused by the UI.
+- **Turn engine: roll, then confirm** — the app rolls and shows the full modifier breakdown
+  and proposed outcome, but nothing is written until someone applies it (and it stays
+  editable first).
+- **Onboarding: founding + leadership** — a character-creation-style wizard covering
+  Kingdom Creation steps 1-5 plus the leadership-role draft.
+- **Art comes from the Player's Guide** — top-down structure tiles and the Stolen Lands map
+  sheets, extracted by `scripts/extract-kingdom-assets.py`. Paizo assets marked "personal
+  use only": fine behind the password gate, do not make the app publicly readable.
 
 ## Recent Decisions
 - **Player helper, not GM tool** — no encounter rollers, NPC trackers, or hex logs
@@ -22,8 +36,19 @@ Grid → turn-tracker wizard.
   structures) and rebuilds. `Block`/`Lot` gone; settlements use a JSONB `grid`;
   `KingdomStructure` is a seedable catalog. **Migration not yet applied** (no local DB in
   the dev session where it was written) — run `npx prisma migrate dev`.
-- **Vitest** — first tests live at `src/lib/pf2e/kingdom.test.ts` (35). Scripts: `npm test`,
-  `npm run test:watch`. No vitest.config needed (v4 zero-config).
+- **Vitest** — 65 tests across `kingdom.test.ts`, `kingdom-activities.test.ts` and
+  `dice.test.ts`. Scripts: `npm test`, `npm run test:watch`. No vitest.config (v4 zero-config).
+- **The activity catalog is generated, not hand-written** — `kingdom-activities.ts` comes
+  from `scripts/extract-kingdom-activities.py`. Re-run the script rather than editing the
+  data. The V&K additions/amendments live in `VK_NEW` / `VK_PATCH` inside that script.
+- **The map sheets were NOT stitched.** The guide calls them "blank maps" (plural) and each
+  carries its own compass rose. Two independent correlation searches each produced a
+  confident-looking arrangement (a 2x2, then a horizontal strip) that turned out to be the
+  repeating hex lattice matching itself. Do not re-stitch without outside evidence of the
+  intended layout.
+- **Hex geometry is measured** — pointy-top, 175px column pitch, 152px row pitch, ~101px
+  circumradius, per-sheet grid origins in `public/kingdom/map/manifest.json`. The ratio
+  175/152 = 1.151 against the 1.1547 a pointy-top lattice predicts.
 - **react-konva** — requires `dynamic(() => import(...), { ssr: false })` for Next.js compatibility
 - **Zustand** — used only for canvas state management (positions, selections, zoom/pan)
 - **JSONB elements** — campsite layout positions stored as JSON in CampsiteLayout.elements column
@@ -72,11 +97,15 @@ Grid → turn-tracker wizard.
 - `src/components/inventory/inventory-shell.tsx` — updated with Wish List tab
 - `src/app/(app)/inventory/page.tsx` — updated to fetch wish list data
 
-## Key Phase 5 Files (foundation slice)
+## Key Phase 5 Files
 - `src/lib/pf2e/kingdom.ts` — rules engine: charters, heartlands, governments, 16 skills,
-  8 leadership roles, Size table, Control DC, proficiency/skill modifiers, ruin, XP,
-  RAW vs VK advancement tables, `computeAbilityScores`, turn-phase structure
-- `src/lib/pf2e/kingdom.test.ts` — 35 Vitest cases
+  8 leadership roles, Size table, Control DC, proficiency/skill modifiers, ruin,
+  RAW vs VK advancement tables, `computeAbilityScores`, `startingSkills`, turn phases
+- `src/lib/pf2e/kingdom-activities.ts` — 43 activities (41 RAW + 2 V&K), GENERATED
+- `src/lib/dice.ts` — dice + PF2e degree of success, injectable rng
+- `scripts/extract-kingdom-assets.py` — map sheets + 69 structure tiles → `public/kingdom/`
+- `scripts/extract-kingdom-activities.py` — the activity catalog generator
+- `src/lib/pf2e/kingdom.test.ts` / `kingdom-activities.test.ts` / `src/lib/dice.test.ts`
 - `src/lib/kingdom.ts` — `getOrCreateKingdom()` (seeds 16 skills + 8 roles)
 - `src/app/api/kingdom/route.ts` — GET / PATCH scalar fields (whitelisted)
 - `src/app/api/kingdom/leadership/route.ts` — PATCH one role (assign char/NPC, invest)
@@ -85,4 +114,6 @@ Grid → turn-tracker wizard.
 - `src/app/(app)/kingdom/page.tsx` — server component, replaces the placeholder
 
 ## Open Questions
-- None currently
+- Do the four Stolen Lands map sheets tile into one map, and in what arrangement? Could not
+  be determined from the PDF. If the physical copy or a Foundry module settles it, the
+  offsets drop straight into `public/kingdom/map/manifest.json`.
