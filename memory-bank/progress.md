@@ -98,8 +98,18 @@
 - [x] V&K starting trained skills — charter and heartland each grant a set skill plus a
       free pick; a duplicate grant converts to another free pick. `startingSkills()`.
 - [x] XP removed from the engine and the Overview UI (milestone levelling).
-- [ ] Migration for the trained-skill fields (charterSkill / heartlandSkill / picks).
-- [ ] Founding + leadership onboarding wizard.
+- [x] Migration `20260828170000_kingdom_founding` — adds `kingdoms.skill_picks` and
+      `kingdoms.founded`, drops the unused `xp` column. **Not yet applied** (no local DB
+      and no Docker in the session where it was written); `prisma migrate deploy` runs it
+      on the next Coolify deploy. Existing kingdoms with a government are marked founded so
+      they land on the dashboard rather than back in onboarding.
+- [x] Founding + leadership onboarding wizard — an 8-step character-creation-style flow
+      (name/ruleset → charter → heartland → government → ability finalization → trained
+      skills → leadership draft → review) with heraldic ability crests that update live as
+      choices are made, a step rail, and per-step gating. `POST /api/kingdom/found` commits
+      it in one transaction, recomputing scores and skills server-side so stored state can
+      never drift from the choices. The Kingdom tab shows the wizard while `founded` is
+      false and the dashboard afterwards.
 - [ ] Hex Map implementation.
 - [ ] Settlements & Urban Grid.
 - [ ] Turn Tracker (roll, then confirm).

@@ -7,8 +7,8 @@
 Phase 5 Kingdom — building toward a **game-feel** Kingdom section (Travian-like), not a
 spreadsheet. Rules engine, schema, bootstrap API and the Dashboard page are in. Art assets
 are extracted from the Player's Guide. The activity catalog, dice module and V&K trained
-skills just landed. Next: schema migration for the trained-skill fields, then the founding
-wizard → hex map → settlements/Urban Grid → turn tracker → theme pass.
+skills landed, and the founding wizard is in. Next: hex map → settlements/Urban Grid →
+turn tracker → theme pass.
 
 ## Phase 5 Direction (decided with the user)
 - **Game feel over forms** — the Kingdom section should read like a browser kingdom-builder.
@@ -106,12 +106,23 @@ wizard → hex map → settlements/Urban Grid → turn tracker → theme pass.
 - `scripts/extract-kingdom-assets.py` — map sheets + 69 structure tiles → `public/kingdom/`
 - `scripts/extract-kingdom-activities.py` — the activity catalog generator
 - `src/lib/pf2e/kingdom.test.ts` / `kingdom-activities.test.ts` / `src/lib/dice.test.ts`
+- `src/components/kingdom/founding-wizard.tsx` — the 8-step onboarding flow
+- `src/components/kingdom/founding-parts.tsx` — ability crests, choice cards, step rail
+- `src/app/api/kingdom/found/route.ts` — transactional commit of the founding
 - `src/lib/kingdom.ts` — `getOrCreateKingdom()` (seeds 16 skills + 8 roles)
 - `src/app/api/kingdom/route.ts` — GET / PATCH scalar fields (whitelisted)
 - `src/app/api/kingdom/leadership/route.ts` — PATCH one role (assign char/NPC, invest)
 - `src/app/api/kingdom/skills/route.ts` — PATCH one skill's rank (0–4)
 - `src/components/kingdom/*` — shell + overview / skills / leadership-roster / founding-choices
 - `src/app/(app)/kingdom/page.tsx` — server component, replaces the placeholder
+
+## Notes for the next slice
+- **The migration is unapplied.** No local Postgres and no Docker in this environment, so
+  `20260828170000_kingdom_founding` was hand-written in the style of the previous kingdom
+  migration and verified only by typecheck and build. It runs on the next deploy.
+- The wizard lets one character hold several leadership roles. The Player's Guide expects
+  one role per PC, but this is a player helper rather than a rules enforcer — tighten it
+  only if the table wants that.
 
 ## Open Questions
 - Do the four Stolen Lands map sheets tile into one map, and in what arrangement? Could not
