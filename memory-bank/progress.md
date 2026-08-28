@@ -73,12 +73,20 @@
 - ✅ 21 API routes, clean production build
 
 ## What's Left (Phase 5 — Kingdom) 🚧 IN PROGRESS
-- [x] Kingdom tab design and plan artifact created (rules analysis, schema updates, UI architecture).
-- [ ] Schema update implementation (adding skills, feats, initial choices).
-- [ ] Dashboard & Leadership UI.
-- [ ] Hex Map Implementation.
+- [x] Kingdom tab design and plan (rules analysis, schema, UI architecture).
+- [x] Rules engine `src/lib/pf2e/kingdom.ts` + 35 Vitest cases (RAW & VK rulesets).
+- [x] Schema redesign + migration `20260828120000_redesign_kingdom` (skills, feats,
+      founding choices, ruin tracks, fame, size; JSONB settlement grid; structure catalog).
+      ⚠ migration written but NOT yet applied — run `npx prisma migrate dev`.
+- [x] `getOrCreateKingdom()` bootstrap + `/api/kingdom`, `/api/kingdom/leadership`,
+      `/api/kingdom/skills` (24 API routes total, clean build).
+- [x] Kingdom Dashboard page: Overview (abilities, derived stats, unrest, ruin, resources),
+      Skills (16 skills w/ computed modifiers + rank picker), Leadership (assign + invest),
+      Founding (charter/heartland/government + boost preview & apply).
+- [ ] Hex Map implementation.
 - [ ] Settlements & Urban Grid.
-- [ ] Turn Tracker Wizard.
+- [ ] Turn Tracker wizard.
+- [ ] Seed `kingdom_structures` catalog (RAW + V&K item-bonus additions).
 
 ## Known Issues
 - Next.js 16 warns that `middleware` is deprecated in favor of `proxy` — functional, no migration needed yet
