@@ -9,7 +9,7 @@
 | 2 — Dashboard | Quests, wealth summary, quick links | ✅ Complete |
 | 3 — Campsite | Canvas editor, activities, watches, recipes | ✅ Complete |
 | 4 — Polish | Wish list UI, UX refinements, mobile, seed data | ✅ Complete |
-| 5 — Kingdom | Hex grid, kingdom stats, settlements, turns | ⏸️ On Hold |
+| 5 — Kingdom | Hex grid, kingdom stats, settlements, turns | 🚧 In Progress |
 
 ## What Works
 
@@ -72,10 +72,13 @@
 - ✅ Campsite shell: flex-wrap button bar, hidden button labels on mobile
 - ✅ 21 API routes, clean production build
 
-## What's Left (Phase 5 — Kingdom) ⏸️ ON HOLD
-- [ ] Kingdom management UI (hex grid, stats, settlements, turns)
-- [ ] Schema models already defined in Prisma
-- **Note:** Phase 5 is on hold until explicitly requested by the user.
+## What's Left (Phase 5 — Kingdom) 🚧 IN PROGRESS
+- [x] Kingdom tab design and plan artifact created (rules analysis, schema updates, UI architecture).
+- [ ] Schema update implementation (adding skills, feats, initial choices).
+- [ ] Dashboard & Leadership UI.
+- [ ] Hex Map Implementation.
+- [ ] Settlements & Urban Grid.
+- [ ] Turn Tracker Wizard.
 
 ## Known Issues
 - Next.js 16 warns that `middleware` is deprecated in favor of `proxy` — functional, no migration needed yet

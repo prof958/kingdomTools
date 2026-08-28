@@ -1,16 +1,16 @@
 # Active Context — KingdomTools
 
 ## Current Phase
-**Phase 4 — Polish** ✅ COMPLETE
+**Phase 5 — Kingdom** 🚧 IN PROGRESS
 
 ## Current Focus
-Phases 0–4 complete. Phase 5 (Kingdom Management) is **on hold** until explicitly requested.
+Designing and planning the Kingdom Management feature based on Pathfinder 2e Kingmaker rules and Vance & Kerenshara's custom rules. The design artifact (`Kingdom_Tab_Design.md`) has been created and presented to the user for feedback.
 
 ## Recent Decisions
 - **Player helper, not GM tool** — no encounter rollers, NPC trackers, or hex logs
 - **shadcn/ui uses @base-ui/react** (NOT Radix) — no `asChild` prop, Select.onValueChange is `(value: string | null, eventDetails) => void`
 - **bcrypt dev fallback** — hash hardcoded in auth.ts because `$` conflicts with dotenv-expand
-- **Phase 5 on hold** — Kingdom Management deferred indefinitely; only start when user explicitly asks
+- **Phase 5 Design** — Kingdom schema needs updates to track skills, feats, and initial choices (charter, heartland, government).
 - **react-konva** — requires `dynamic(() => import(...), { ssr: false })` for Next.js compatibility
 - **Zustand** — used only for canvas state management (positions, selections, zoom/pan)
 - **JSONB elements** — campsite layout positions stored as JSON in CampsiteLayout.elements column
