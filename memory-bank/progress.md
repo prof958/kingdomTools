@@ -125,7 +125,35 @@
       one-dimensional comb of grid lines. A hex lattice has vertical edges every *half*
       column pitch, so the comb scored two phases equally and picked between them by noise
       — it had produced origins disagreeing by 90px between identical sheets.
-- [ ] Settlements & Urban Grid.
+- [x] Settlements & Urban Grid. `src/lib/urban-grid.ts` (pure state-transition logic, 35
+      tests): 3x3 blocks of 2x2 lots per Urban Grid instance, flattened to one 6x6 lot
+      space rather than nested per-block grids — that's what lets a 2-lot structure span
+      two lots in different blocks (RAW doesn't require multi-lot structures to stay
+      within one block). Handles placement/removal, rubble (a failed-Demolish/event state
+      distinct from empty), block activation with RAW's contiguity rule (required for
+      village/town, dropped for city/metropolis, which may build in any of the 9 blocks),
+      settlement level and Overcrowded derivation. `GET/POST /api/kingdom/settlements` +
+      `PATCH/DELETE /api/kingdom/settlements/[id]` (one `action`-discriminated endpoint for
+      every grid mutation); level/overcrowded are recomputed server-side on every mutation
+      and at creation, never trusted from the client — same discipline as kingdom Size.
+      UI: `SettlementsTab` (switcher, founding flow, borders, inspector) +
+      `UrbanGridEditor` (the flat 6x6 grid, one visual item per placement/inactive-block/
+      empty-lot, each with its own `gridColumn`/`gridRow` span) + `StructurePicker`
+      (searches the 74-structure catalog, shows the extracted tile art, filters by fit and
+      kingdom level). Cost is shown but NOT deducted — no resource economy exists yet
+      outside manual Overview edits, and deducting only here would be a worse
+      inconsistency than deferring it to the turn tracker, which is where a real Build
+      Structure check belongs anyway.
+      NOTE (real bug, fixed): tile art used `next/image`, whose `/_next/image` optimizer
+      route does a server-side loopback fetch with no session cookie — the auth proxy
+      redirected it to `/login`, so every tile "loaded" as an HTML page instead of a PNG.
+      Same root cause class as the hex map's asset-gating issue earlier, different code
+      path (a browser-issued `<img>` carries the real cookie; the optimizer's server-side
+      fetch does not). Switched to plain `<img>`, matching the campsite canvas's existing
+      convention.
+      Verified live end-to-end against the real dev DB: founded a village, placed/selected/
+      demolished structures, cycled a border, toggled capital — all persisted correctly,
+      including `level`/`overcrowded` recomputing right (0 → 1 after the first structure).
 - [ ] Turn Tracker (roll, then confirm).
 - [x] Structure catalog — 74 structures with level, lot count, build cost, construction
       check, upgrade chains, item bonuses, effects and Ruin, each joined to its top-down

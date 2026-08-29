@@ -8,9 +8,49 @@ Phase 5 Kingdom — building toward a **game-feel** Kingdom section (Travian-lik
 spreadsheet. Rules engine, schema, bootstrap API and the Dashboard page are in. Art assets
 are extracted from the Player's Guide. The activity catalog, dice module and V&K trained
 skills landed, the founding wizard is in, the hex map works, and the structure catalog is
-complete. Delete-kingdom (type-to-confirm) is in. A proper local dev environment now
-exists (see below). Next: the settlement Urban Grid (drag the extracted tiles onto lots) →
-turn tracker → theme pass.
+complete. Delete-kingdom (type-to-confirm) is in. A proper local dev environment exists.
+The Settlement Urban Grid is in — the app's Select primitive was also fixed (see below,
+it was silently showing raw enum values instead of labels app-wide). Next: turn tracker →
+theme pass.
+
+## Settlement Urban Grid (new)
+- `src/lib/urban-grid.ts` — pure logic, no DB/React, 35 tests. One Urban Grid instance is
+  3x3 blocks of 2x2 lots, but the module models it as one flat 6x6 lot grid rather than
+  nested per-block grids, because a 2-lot structure can span two lots in *different*
+  blocks (RAW never restricts multi-lot structures to one block) and a flat grid makes
+  that just plain 2D arithmetic instead of a cross-container spanning problem.
+  `whyCannotPlace`/`whyCannotActivateBlock` return a reason string (or null), which the
+  API forwards straight to the UI as the error message — one source of truth for both.
+- Village/Town block activation requires contiguity (RAW, KPG 46); City/Metropolis drop
+  that and can use any of the 9 blocks. `settlementLevel` and `isOvercrowded` are derived
+  from the grid every time, recomputed server-side on every mutation (and at creation —
+  the schema's `level` default of 1 doesn't match an empty grid's derived 0, so the POST
+  route sets it explicitly rather than trusting the default).
+- Structure build cost is shown, not deducted — this app has no resource economy loop yet
+  outside manual Overview edits; auto-deducting only in one place would be a worse
+  inconsistency than waiting for the turn tracker, which is also where a real rolled
+  Build Structure check belongs.
+- Tile art must use a plain `<img>`, not `next/image` — its `/_next/image` route does a
+  server-side loopback fetch with no session cookie, so the auth proxy redirects it to
+  `/login` and the "image" that loads is an HTML page. Same failure class as the hex map
+  sheets earlier in the session, different code path (`<img>` is a real browser request
+  and carries the cookie; the optimizer's fetch does not).
+
+## Select primitive fix (base-ui) (new)
+`<Select.Value>` in `@base-ui/react` does NOT read the `label` prop on `<Select.Item>` —
+that only feeds keyboard typeahead. The closed trigger's text comes from a separate
+`items` map that must be passed to `<Select.Root>` explicitly; without it the trigger
+shows the raw `value`. Every `<Select>` in the app (11 usages) was passing `label` on each
+item expecting it to cover the trigger too, and none of them did — this is why Kingdom's
+Founding tab showed `conquest`/`forest_swamp`/`__vacant__` instead of proper labels, and
+it was affecting every other Select in the app too (e.g. a priority filter would have
+shown `"0"` instead of "Low Priority"). Fixed once, centrally, in
+`src/components/ui/select.tsx`: `Select` now walks its own children to auto-derive
+`items` from the `label`/`value` pairs every call site already provides — no call site
+had to change. Had to stay a *generic* function component (matching
+`SelectPrimitive.Root`'s own `<Value, Multiple>` signature) rather than being typed via
+`React.ComponentProps<typeof SelectPrimitive.Root>`, which collapses the generic and
+breaks `onValueChange` typing at every call site.
 
 ## Local dev environment (new)
 - **`docker-compose.dev.yml`** — an isolated local-only Postgres, separate from prod in
@@ -41,6 +81,9 @@ turn tracker → theme pass.
   applying cleanly, then `db:seed` loading 54 items.
 - See `README.md` for the full local-dev walkthrough and the "why this can't touch
   production" explanation.
+- Local `.env`'s `APP_PASSWORD_HASH` was cleared (it held a leftover custom hash with no
+  known plaintext — bcrypt can't be reversed). Login now uses the documented dev fallback:
+  password **`kingmaker`**.
 
 ## Phase 5 Direction (decided with the user)
 - **Game feel over forms** — the Kingdom section should read like a browser kingdom-builder.
@@ -153,6 +196,11 @@ turn tracker → theme pass.
 - `src/lib/hex.ts` + `src/lib/map-sheets.ts` (generated) — hex maths and sheet geometry
 - `src/components/kingdom/kingdom-map.tsx` / `hex-map-canvas.tsx` / `hex-inspector.tsx`
 - `src/app/api/kingdom/hexes/route.ts` — hex upsert; recounts kingdom Size
+- `src/lib/urban-grid.ts` + `urban-grid.test.ts` — Urban Grid pure logic (block/lot
+  placement, rubble, activation, level/overcrowded derivation)
+- `src/components/kingdom/settlements-tab.tsx` / `urban-grid-editor.tsx` /
+  `structure-picker.tsx`
+- `src/app/api/kingdom/settlements/route.ts` + `[id]/route.ts` — found/list, grid mutations
 - `src/lib/kingdom.ts` — `getOrCreateKingdom()` (seeds 16 skills + 8 roles)
 - `src/app/api/kingdom/route.ts` — GET / PATCH scalar fields (whitelisted)
 - `src/app/api/kingdom/leadership/route.ts` — PATCH one role (assign char/NPC, invest)
