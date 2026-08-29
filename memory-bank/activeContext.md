@@ -10,8 +10,38 @@ are extracted from the Player's Guide. The activity catalog, dice module and V&K
 skills landed, the founding wizard is in, the hex map works, and the structure catalog is
 complete. Delete-kingdom (type-to-confirm) is in. A proper local dev environment exists.
 The Settlement Urban Grid is in — the app's Select primitive was also fixed (see below,
-it was silently showing raw enum values instead of labels app-wide). Next: turn tracker →
-theme pass.
+it was silently showing raw enum values instead of labels app-wide). The Turn Tracker is
+in — every functional Phase 5 slice from the original plan is now done. Next: theme pass
+is the only thing left on the roadmap.
+
+## Turn Tracker (new)
+- `src/lib/pf2e/kingdom-turn.ts` — pure Upkeep math (Unrest delta, Commodity gains from
+  Work Sites, storage cap, Consumption, its RP shortfall cost), 17 tests.
+- `unrestStatusPenalty()` added to `kingdom.ts` — the Unrest 1/5/10/15 status-penalty
+  tiers (KPG 39) had never been modeled. The turn tracker's activity rolls are the first
+  place in the app that applies it; the Skills tab's displayed modifiers still don't
+  (known gap).
+- `KINGDOM_TURN_PHASES`'s two XP-era Event steps replaced with one `milestone-check`
+  step — they referenced kingdom XP tracking, which this campaign doesn't use.
+- All dice roll client-side and land in an editable field before anything is written —
+  that IS the "roll, then confirm" mechanism, not a separate approval step layered on
+  top.
+- One `ActivityCheckStep` component serves Commerce's Collect Taxes and all four
+  Leadership/Region/Civic/Army activity steps: pick from the 51-activity catalog, pick
+  a skill, roll against Control DC computed from the kingdom's real scores/ranks/
+  invested bonuses/Ruin penalties, the matching outcome text displays automatically.
+  Civic excludes Build Structure (stays on the Settlements tab).
+- `PATCH /api/kingdom/turns/[id]` only owns turn bookkeeping (log a step, mark done,
+  complete); numeric kingdom changes go through the existing `PATCH /api/kingdom` so
+  there's exactly one place that writes kingdom stats. Completing a turn bumps
+  `kingdom.currentTurn` in the same transaction as marking the turn row complete.
+- Structure cost and activity outcome text are shown, never auto-applied — same
+  precedent as Settlements' Build Structure. Outcome text is often prose ("gain RP
+  equal to the result of 2 Resource Dice") that isn't safe to parse and auto-apply.
+- Verified live end-to-end against the real dev DB, not mocked: started Turn 1, rolled
+  Resource Collection and confirmed `kingdoms.rp` in Postgres matched, rolled a Capital
+  Investment check and got the exact catalog outcome text logged, completed the turn and
+  confirmed `current_turn` advanced and "Start Turn 2" was offered next.
 
 ## Settlement Urban Grid (new)
 - `src/lib/urban-grid.ts` — pure logic, no DB/React, 35 tests. One Urban Grid instance is
@@ -201,6 +231,9 @@ breaks `onValueChange` typing at every call site.
 - `src/components/kingdom/settlements-tab.tsx` / `urban-grid-editor.tsx` /
   `structure-picker.tsx`
 - `src/app/api/kingdom/settlements/route.ts` + `[id]/route.ts` — found/list, grid mutations
+- `src/lib/pf2e/kingdom-turn.ts` + `kingdom-turn.test.ts` — Upkeep-phase pure math
+- `src/components/kingdom/turn-tracker.tsx` / `turn-steps.tsx`
+- `src/app/api/kingdom/turns/route.ts` + `[id]/route.ts` — turn lifecycle, step logging
 - `src/lib/kingdom.ts` — `getOrCreateKingdom()` (seeds 16 skills + 8 roles)
 - `src/app/api/kingdom/route.ts` — GET / PATCH scalar fields (whitelisted)
 - `src/app/api/kingdom/leadership/route.ts` — PATCH one role (assign char/NPC, invest)
