@@ -7,8 +7,40 @@
 Phase 5 Kingdom — building toward a **game-feel** Kingdom section (Travian-like), not a
 spreadsheet. Rules engine, schema, bootstrap API and the Dashboard page are in. Art assets
 are extracted from the Player's Guide. The activity catalog, dice module and V&K trained
-skills landed, the founding wizard is in, and the hex map works. Next: settlements/Urban
-Grid → turn tracker → theme pass.
+skills landed, the founding wizard is in, the hex map works, and the structure catalog is
+complete. Delete-kingdom (type-to-confirm) is in. A proper local dev environment now
+exists (see below). Next: the settlement Urban Grid (drag the extracted tiles onto lots) →
+turn tracker → theme pass.
+
+## Local dev environment (new)
+- **`docker-compose.dev.yml`** — an isolated local-only Postgres, separate from prod in
+  every way that matters: different compose filename (prod's `docker compose up -d` on
+  the VPS only ever reads `docker-compose.yml`), a named Docker volume
+  (`kingdomtools_dev_pgdata`) instead of prod's bind mount, bound to `127.0.0.1` only.
+  Fixed literal credentials (`kingdomtools` / `localdev`) rather than reading `.env` —
+  see next point for why.
+- **Real bug found**: Docker Compose always auto-loads `.env` from the cwd for `${VAR}`
+  interpolation, *regardless of which compose file you asked for*. This repo's `.env` has
+  a bcrypt `APP_PASSWORD_HASH` full of `$` characters, which Compose's parser reads as
+  more variable references and mangles — the exact landmine `docs/DEPLOY.md` already
+  warns about for the prod compose file, just not previously hit locally. Fixed by passing
+  `--env-file docker-compose.dev.env` (a deliberately empty tracked file) in every `db:*`
+  npm script, so the dev compose file never looks at the app's `.env` at all.
+- **`.gitignore` had a real bug**: a stray second `.env.example` line at the bottom
+  silently re-ignored the file an earlier `!.env.example` was explicitly un-ignoring —
+  last-match-wins in gitignore. `.env.example` had been deleted from the repo at some
+  point and could never be re-added while that line stood. Removed; `.env.example`
+  recreated and now tracked.
+- **`prisma/seed.ts` had a real bug**: it read `process.env.DATABASE_URL` directly but
+  never loaded `.env` itself, so running it via its own documented command
+  (`npx tsx prisma/seed.ts`) failed with an opaque pg SASL error unless `DATABASE_URL`
+  happened to already be exported some other way. Fixed with `import "dotenv/config"`.
+- **npm scripts**: `db:up` / `db:down` / `db:reset` / `db:migrate` / `db:seed` /
+  `db:studio`, plus `dev:setup` (up + migrate) for a one-command first run. All verified
+  end-to-end this session: `db:reset` from a torn-down volume through all 13 migrations
+  applying cleanly, then `db:seed` loading 54 items.
+- See `README.md` for the full local-dev walkthrough and the "why this can't touch
+  production" explanation.
 
 ## Phase 5 Direction (decided with the user)
 - **Game feel over forms** — the Kingdom section should read like a browser kingdom-builder.
@@ -108,11 +140,13 @@ Grid → turn tracker → theme pass.
 - `src/lib/pf2e/kingdom.ts` — rules engine: charters, heartlands, governments, 16 skills,
   8 leadership roles, Size table, Control DC, proficiency/skill modifiers, ruin,
   RAW vs VK advancement tables, `computeAbilityScores`, `startingSkills`, turn phases
-- `src/lib/pf2e/kingdom-activities.ts` — 43 activities (41 RAW + 2 V&K), GENERATED
+- `src/lib/pf2e/kingdom-activities.ts` — 51 activities (49 RAW incl. Army + 2 V&K), GENERATED
+- `src/lib/pf2e/kingdom-structures.ts` — 74 structures, GENERATED, joined to their tiles
 - `src/lib/dice.ts` — dice + PF2e degree of success, injectable rng
 - `scripts/extract-kingdom-assets.py` — map sheets + 69 structure tiles → `public/kingdom/`
-- `scripts/extract-kingdom-activities.py` — the activity catalog generator
-- `src/lib/pf2e/kingdom.test.ts` / `kingdom-activities.test.ts` / `src/lib/dice.test.ts`
+- `scripts/extract-kingdom-activities.py` / `extract-kingdom-structures.py` — catalog generators
+- `src/lib/pf2e/kingdom.test.ts` / `kingdom-activities.test.ts` / `kingdom-structures.test.ts`
+  / `src/lib/dice.test.ts` / `src/lib/hex.test.ts`
 - `src/components/kingdom/founding-wizard.tsx` — the 8-step onboarding flow
 - `src/components/kingdom/founding-parts.tsx` — ability crests, choice cards, step rail
 - `src/app/api/kingdom/found/route.ts` — transactional commit of the founding
@@ -125,15 +159,26 @@ Grid → turn tracker → theme pass.
 - `src/app/api/kingdom/skills/route.ts` — PATCH one skill's rank (0–4)
 - `src/components/kingdom/*` — shell + overview / skills / leadership-roster / founding-choices
 - `src/app/(app)/kingdom/page.tsx` — server component, replaces the placeholder
+- **Delete kingdom** — `DELETE /api/kingdom` (type-to-confirm `DangerZone` in
+  `founding-choices.tsx`). The name match is enforced server-side, not just in the UI; the
+  cascade is enforced by Postgres FK constraints (`onDelete: Cascade` on all six
+  Kingdom-owned models), not application code. Deleting just empties the Kingdom row —
+  `getOrCreateKingdom()` recreates a fresh unfounded one on the next load, which is what
+  sends the player back through the founding wizard.
 
 ## Notes for the next slice
-- **Two migrations are unapplied.** No local Postgres and no Docker in this environment, so
-  `20260828170000_kingdom_founding` and `20260828180000_hex_sheet` were hand-written in the
-  style of the previous kingdom migration and verified only by typecheck and build. They
-  run on the next deploy.
-- **Kingdom Size is derived from the map now.** `PATCH /api/kingdom/hexes` recounts claimed
-  hexes and writes Size, so the Overview's Size field should become read-only rather than
-  letting the two disagree.
+- **All 13 migrations are applied in production** (confirmed via `npx prisma migrate status`
+  in the container: "Database schema is up to date"). `prisma` is not on PATH there — it is
+  a local package, so use `npx prisma ...` or `./node_modules/.bin/prisma ...`.
+- **Kingdom Size is derived from the map.** `PATCH /api/kingdom/hexes` recounts claimed
+  hexes and writes Size; the Overview shows it read-only and `PATCH /api/kingdom` refuses
+  the field.
+- **Both generated catalogs hide the same trap.** Structure and activity names contain
+  commas and the word "and" ("tavern, popular", "Rest and Relax"), so upgrade paths and
+  item-bonus targets cannot be split on punctuation — they are resolved by matching against
+  the catalogs' own names. The guide also labels some structures "BUILDING n" rather than
+  "STRUCTURE n", and Rubble's level is an em-dash; matching only the common form silently
+  dropped six entries and merged their text into their neighbours.
 - The wizard lets one character hold several leadership roles. The Player's Guide expects
   one role per PC, but this is a player helper rather than a rules enforcer — tighten it
   only if the table wants that.
