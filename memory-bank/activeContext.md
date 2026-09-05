@@ -1,7 +1,7 @@
 # Active Context — KingdomTools
 
 ## Current Phase
-**Phase 5 — Kingdom** 🚧 IN PROGRESS
+**Phase 5 — Kingdom** 🚧 IN PROGRESS · **Phase 7 — Companions** ✅ DONE
 
 ## Current Focus
 Phase 5 Kingdom — building toward a **game-feel** Kingdom section (Travian-like), not a
@@ -13,6 +13,48 @@ The Settlement Urban Grid is in — the app's Select primitive was also fixed (s
 it was silently showing raw enum values instead of labels app-wide). The Turn Tracker is
 in — every functional Phase 5 slice from the original plan is now done. Next: theme pass
 is the only thing left on the roadmap.
+
+## Companions (Phase 7, new)
+Sending NPC companions (the `characters.is_companion` roster) out on quests, postings,
+injuries and disappearances, and tracking who is where against the Golarion calendar.
+
+- **A companion's whereabouts is their one ACTIVE assignment.** No status column on
+  `Character`. "With the party" is the *absence* of an active row; injury and
+  disappearance are assignment *kinds* (`QUEST` / `STATION` / `RECOVERING` / `MISSING`),
+  not extra character columns — one place to look up where everyone is, one history to
+  read back. `AssignmentStatus` is `ACTIVE | COMPLETED | FAILED | RECALLED`.
+- **Nothing is written when the calendar moves.** `deriveCompanionState(assignment,
+  today)` in `src/lib/companions.ts` computes AWAY / DUE_BACK / OVERDUE / READY etc. from
+  the stored dates versus `campaigns.golarion_*` on every render, so advancing the date on
+  the Dashboard moves every board with zero DB writes and the roster can never drift out
+  of sync with the calendar the way a stored status column would. There is no cron and no
+  background job. Only *resolving* an assignment (how it actually went) writes.
+- Resolution is manual by design — no dice, no DC. The player picks Returned / Failed /
+  Recalled and writes what happened; it stamps the in-world date and writes a `PARTY`
+  log entry. `PATCH` re-opening an assignment clears that stamp.
+- One assignment carries N companions (`companion_assignment_members`), and a companion
+  can only be on one ACTIVE assignment at a time. That uniqueness is enforced in the API
+  (`findAlreadyDeployed`), not by a DB constraint, because it only applies to ACTIVE rows
+  — the ledger is meant to hold many resolved rows per companion.
+- Dates are stored as loose day/month/year integer triples, matching `log_entries`.
+  `absoluteDay` / `daysBetween` / `isValidGolarionDate` were added to
+  `src/lib/pf2e/calendar.ts` so ordering and subtraction are plain arithmetic.
+- The dialog asks for a **duration in days**, not a return date, and shows the date it
+  lands on — in play you say "gone about ten days", not "back on the 20th".
+- `location_name` is always stored even when a hex/settlement is linked, so a card still
+  reads correctly after that hex or settlement is deleted (both FKs are `SetNull`).
+- `AssignmentDialog` mounts its form only while open and keys it by what is being edited,
+  so it starts from props — no reset `useEffect`. The repo's eslint config errors on
+  `react-hooks/set-state-in-effect`, so the day-clamp is derived at render
+  (`Math.min(departDay, maxDay)`) rather than clamped in an effect.
+- `/api/status` now carries a `companions` array (name, state, doing, location, timing)
+  built with the same pure helpers the UI uses, so that payload cannot disagree with the
+  screen.
+- 35 tests in `src/lib/companions.test.ts` cover the state machine, the calendar
+  arithmetic (leap years, year boundaries) and the board ordering.
+- The migration was hand-written (no Docker in the worktree) and then verified
+  byte-identical against `prisma migrate diff --from-empty --to-schema`. **It has never
+  been run against a live database.**
 
 ## Turn Tracker (new)
 - `src/lib/pf2e/kingdom-turn.ts` — pure Upkeep math (Unrest delta, Commodity gains from
