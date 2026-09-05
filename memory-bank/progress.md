@@ -10,6 +10,7 @@
 | 3 — Campsite | Canvas editor, activities, watches, recipes | ✅ Complete |
 | 4 — Polish | Wish list UI, UX refinements, mobile, seed data | ✅ Complete |
 | 5 — Kingdom | Hex grid, kingdom stats, settlements, turns | 🚧 In Progress |
+| 7 — Companions | Companion roster, assignments, deployment board | ✅ Complete |
 
 ## What Works
 
